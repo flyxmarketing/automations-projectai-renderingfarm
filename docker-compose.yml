@@ -1,0 +1,32 @@
+---
+services:
+  br777_renderfarm:
+    container_name: br777_renderfarm
+    build: .
+    expose:
+      - "8000"
+    ports:
+      - "127.0.0.1:8000:8000"
+    networks:
+      - frontend
+      - backend
+    #deploy:
+    #  resources:
+    #    limits:
+    #      cpus: '1.6'
+    #labels:
+    #  - "traefik.enable=true"
+    #  - "traefik.http.routers.br777_renderfarm.rule=Host(`br777rfarm.botfarm.live`)"
+    #  - "traefik.http.routers.br777_renderfarm.entrypoints=websecure"
+    #  - "traefik.http.routers.br777_renderfarm.tls.certresolver=myresolver"
+    #  - "traefik.http.routers.br777_renderfarm-http.rule=Host(`br777rfarm.botfarm.live`)"
+    #  - "traefik.http.routers.br777_renderfarm-http.entrypoints=web"
+    #  - "traefik.http.routers.br777_renderfarm-http.middlewares=redirect-to-https"
+    #  - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+    #  - "traefik.http.services.br777_renderfarm.loadbalancer.server.port=8000"
+
+networks:
+  frontend:
+    external: true
+  backend:
+    external: true

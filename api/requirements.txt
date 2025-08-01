@@ -2,3 +2,4 @@ requests
 quart
 asyncio
 hypercorn
+yt_dlp

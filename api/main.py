@@ -4,6 +4,7 @@ import uuid
 import requests
 import re
 import yt_dlp
+import os
 
 from quart import Quart, jsonify, request
 
@@ -33,6 +34,10 @@ def download_video(url, filepath, processing_id):
             'outtmpl': filepath,
             'format': 'best[ext=mp4]/best'
         }
+
+        cookies_file = '/media/cookies.txt'
+        if os.path.exists(cookies_file):
+            ydl_opts['cookiefile'] = cookies_file
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])

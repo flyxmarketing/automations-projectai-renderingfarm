@@ -28,7 +28,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '1'
+          cpus: '3.5'
     volumes:
       - ./media:/media
     networks:

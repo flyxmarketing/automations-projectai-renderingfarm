@@ -4,6 +4,7 @@ import json
 import logging
 import time
 import requests
+from rclone_python import rclone
 
 logging.basicConfig(
     level=logging.INFO,
@@ -23,10 +24,14 @@ def run_ffmpeg_command(cmd):
 def upload_render(archive_id, item_id):
     logger.info(f"Uploading render for item {item_id}")
     try:
+        rclone.set_config_file("/root/.config/rclone/rclone.conf")
+        rclone.copyto(f"/media/original/{item_id}.mp4",f"storage:{archive_id}/{item_id}/original.mp4")
+        rclone.copyto(f"/media/processed/{item_id}.mp4",f"storage:{archive_id}/{item_id}/render.mp4")
+        rclone.copyto(f"/media/processed/{item_id}_thumbnail.jpg",f"storage:{archive_id}/{item_id}/thumbnail.jpg")
         webhook_url = "https://automations.flyxmarketing.com/api/v1/webhooks/imI7XJaffmV9Q7qYNfFBH"
-        item_url_original = f"https://example.com/item/{item_id}"
-        item_url_rendered = f"https://example.com/item/{item_id}/render"
-        item_url_rendered_thumbnail = f"https://example.com/item/{item_id}/render/thumbnail"
+        item_url_original = f"https://rf-storage.flyxmarketing.com/{archive_id}/{item_id}/original.mp4"
+        item_url_rendered = f"https://rf-storage.flyxmarketing.com/{archive_id}/{item_id}/render.mp4"
+        item_url_rendered_thumbnail = f"https://rf-storage.flyxmarketing.com/{archive_id}/{item_id}/thumbnail.jpg"
         body = {
             "archive_id": archive_id,
             "item_id": item_id,
@@ -154,7 +159,6 @@ def main():
                     f.write(f"file '{os.path.abspath(watermarked_resized_path)}'\n")
                     f.write(f"file '{os.path.abspath(postroll_resized_path)}'\n")
 
-                # Log concat file contents for debugging
                 with open(concat_file, 'r') as f:
                     concat_contents = f.read()
                     logger.info(f"Concat file contents:\n{concat_contents}")
@@ -209,6 +213,10 @@ def main():
                 logger.info("Video processing completed successfully")
 
                 upload_render(item.get("archive_id"), item_id)
+
+                os.remove(thumbnail_path)
+                os.remove(original_destination)
+                os.remove(output_path)
 
                 item["status"] = "completed"
                 with open('/media/queue.json', 'w') as f:

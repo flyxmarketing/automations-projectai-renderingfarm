@@ -11,8 +11,13 @@ ENV PYTHONUNBUFFERED 1
 WORKDIR /code
 
 COPY requirements.txt /code/
+
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
+
+RUN mkdir -p /root/.config/rclone
+
+COPY rclone.conf /root/.config/rclone/
 
 COPY . /code
 

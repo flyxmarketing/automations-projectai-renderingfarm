@@ -2,6 +2,9 @@ import logging
 import json
 import uuid
 import requests
+import re
+import yt_dlp
+
 from quart import Quart, jsonify, request
 
 logging.basicConfig(
@@ -14,13 +17,33 @@ logger = logging.getLogger(__name__)
 QUEUE_FILE = '/media/queue.json'
 
 def download_video(url, filepath, processing_id):
-    response = requests.get(url, stream=True)
-    response.raise_for_status()
+    social_media_patterns = [
+        r'instagram\.com',
+        r'tiktok\.com',
+        r'facebook\.com',
+        r'fb\.watch',
+        r'youtube\.com',
+        r'youtu\.be'
+    ]
 
-    with open(filepath, 'wb') as f:
-        for chunk in response.iter_content(chunk_size=8192):
-            if chunk:
-                f.write(chunk)
+    is_social_media = any(re.search(pattern, url, re.IGNORECASE) for pattern in social_media_patterns)
+
+    if is_social_media:
+        ydl_opts = {
+            'outtmpl': filepath,
+            'format': 'best[ext=mp4]/best'
+        }
+
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ydl.download([url])
+    else:
+        response = requests.get(url, stream=True)
+        response.raise_for_status()
+
+        with open(filepath, 'wb') as f:
+            for chunk in response.iter_content(chunk_size=8192):
+                if chunk:
+                    f.write(chunk)
 
     logger.info(f'[{processing_id}] Video downloaded successfully to: {filepath}')
 

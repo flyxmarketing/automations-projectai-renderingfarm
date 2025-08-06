@@ -10,8 +10,7 @@ services:
     volumes:
       - ./media:/media
     networks:
-      - frontend
-      - backend
+      - npm_frontend
     #labels:
     #  - "traefik.enable=true"
     #  - "traefik.http.routers.br777_renderfarm.rule=Host(`br777rfarm.botfarm.live`)"
@@ -26,18 +25,15 @@ services:
   br777_renderfarm_render:
     container_name: br777_renderfarm_render
     build: ./render/
-    #deploy:
-    #  resources:
-    #    limits:
-    #      cpus: '1.6'
+    deploy:
+      resources:
+        limits:
+          cpus: '2.5'
     volumes:
       - ./media:/media
     networks:
-      - frontend
-      - backend
+      - npm_frontend
 
 networks:
-  frontend:
-    external: true
-  backend:
+  npm_frontend:
     external: true

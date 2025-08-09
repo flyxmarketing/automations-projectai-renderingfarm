@@ -28,19 +28,63 @@ def download_video(url, filepath, processing_id):
     ]
 
     is_social_media = any(re.search(pattern, url, re.IGNORECASE) for pattern in social_media_patterns)
+    is_instagram = re.search(r'instagram\.com', url, re.IGNORECASE)
 
     if is_social_media:
-        ydl_opts = {
-            'outtmpl': filepath,
-            'format': 'best[ext=mp4]/best'
-        }
+        try:
+            ydl_opts = {
+                'outtmpl': filepath,
+                'format': 'best[ext=mp4]/best'
+            }
 
-        cookies_file = '/media/cookies.txt'
-        if os.path.exists(cookies_file):
-            ydl_opts['cookiefile'] = cookies_file
+            cookies_file = '/media/cookies.txt'
+            if os.path.exists(cookies_file):
+                ydl_opts['cookiefile'] = cookies_file
 
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            ydl.download([url])
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                ydl.download([url])
+        except Exception as e:
+            logger.warning(f'[{processing_id}] yt-dlp failed: {str(e)}')
+
+            if is_instagram:
+                logger.info(f'[{processing_id}] Trying RapidAPI for Instagram URL')
+
+                headers = {
+                    "Content-Type": "application/json",
+                    "x-rapidapi-key": "3799837a21msh8a998ce2d72228cp10acc2jsn7a4dd347d615",
+                    "x-rapidapi-host": "instagram120.p.rapidapi.com"
+                }
+
+                body = {
+                    "data": {
+                        "url": url
+                    }
+                }
+
+                response = requests.post(
+                    "https://instagram120.p.rapidapi.com/api/instagram/links",
+                    headers=headers,
+                    json=body
+                )
+                response.raise_for_status()
+
+                api_data = response.json()
+
+                if 'data' in api_data and 'url' in api_data['data']:
+                    video_url = api_data['data']['url']
+
+                    # Download the video from the extracted URL
+                    video_response = requests.get(video_url, stream=True)
+                    video_response.raise_for_status()
+
+                    with open(filepath, 'wb') as f:
+                        for chunk in video_response.iter_content(chunk_size=8192):
+                            if chunk:
+                                f.write(chunk)
+                else:
+                    raise Exception("Failed to extract video URL from RapidAPI response")
+            else:
+                raise e
     else:
         response = requests.get(url, stream=True)
         response.raise_for_status()

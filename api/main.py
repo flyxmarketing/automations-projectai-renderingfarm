@@ -68,8 +68,8 @@ def download_video(url, filepath, processing_id):
 
                 api_data = response.json()
 
-                if 'body' in api_data and len(api_data['body']) > 0 and 'urls' in api_data['body'][0] and len(api_data['body'][0]['urls']) > 0:
-                    video_url = api_data['body'][0]['urls'][0]['url']
+                if len(api_data[0]) > 0 and 'urls' in api_data[0] and len(api_data[0]['urls']) > 0:
+                    video_url = api_data[0]['urls'][0]['url']
 
                     video_response = requests.get(video_url, stream=True)
                     video_response.raise_for_status()

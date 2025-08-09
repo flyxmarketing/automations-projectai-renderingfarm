@@ -56,9 +56,7 @@ def download_video(url, filepath, processing_id):
                 }
 
                 body = {
-                    "data": {
-                        "url": url
-                    }
+                    "url": url
                 }
 
                 response = requests.post(

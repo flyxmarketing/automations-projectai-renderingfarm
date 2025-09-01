@@ -121,7 +121,7 @@ def main():
                 watermark_cmd = [
                     'ffmpeg', '-i', input_path, '-stream_loop', '-1', '-i', watermark_path,
                     '-filter_complex',
-                    f'[1:v]scale={watermark_width}:-1[watermark];[0:v][watermark]overlay=(W-w)/2:H-h-{margin_bottom}:enable=gte(t\\,1):shortest=1',
+                    f'[1:v]scale={watermark_width}:-1[watermark];[0:v][watermark]overlay=(W-w)/2:H-h-{margin_bottom}:enable=gte(t\\,3):shortest=1',
                     '-c:v', 'libx264', '-preset', 'fast', '-crf', '23',
                     '-c:a', 'aac', '-b:a', '128k',
                     '-r', '30', '-g', '60',
@@ -137,45 +137,46 @@ def main():
                     '-c:v', 'libx264', '-preset', 'fast', '-crf', '23',
                     '-c:a', 'aac', '-b:a', '128k',
                     '-r', '30', '-g', '60',
-                    watermarked_resized_path, '-y'
+                #    watermarked_resized_path, '-y'
+                    output_path, '-y'
                 ]
                 run_ffmpeg_command(watermarked_resize_cmd)
                 logger.info("Watermarked video resized successfully")
 
-                logger.info("Resizing postroll video with padding")
-                postroll_resize_cmd = [
-                    'ffmpeg', '-i', postroll_path,
-                    '-vf', f'scale={target_width}:{target_height}:force_original_aspect_ratio=decrease,pad={target_width}:{target_height}:(ow-iw)/2:(oh-ih)/2:color={primary_color}',
-                    '-c:v', 'libx264', '-preset', 'fast', '-crf', '23',
-                    '-c:a', 'aac', '-ar', '44100', '-b:a', '128k',
-                    '-r', '30', '-g', '60',
-                    postroll_resized_path, '-y'
-                ]
-                run_ffmpeg_command(postroll_resize_cmd)
-                logger.info("Postroll video resized successfully")
+                #logger.info("Resizing postroll video with padding")
+                #postroll_resize_cmd = [
+                #    'ffmpeg', '-i', postroll_path,
+                #    '-vf', f'scale={target_width}:{target_height}:force_original_aspect_ratio=decrease,pad={target_width}:{target_height}:(ow-iw)/2:(oh-ih)/2:color={primary_color}',
+                #    '-c:v', 'libx264', '-preset', 'fast', '-crf', '23',
+                #    '-c:a', 'aac', '-ar', '44100', '-b:a', '128k',
+                #    '-r', '30', '-g', '60',
+                #    postroll_resized_path, '-y'
+                #]
+                #run_ffmpeg_command(postroll_resize_cmd)
+                #logger.info("Postroll video resized successfully")
 
-                logger.info("Creating concat file")
-                with open(concat_file, 'w') as f:
-                    f.write(f"file '{os.path.abspath(watermarked_resized_path)}'\n")
-                    f.write(f"file '{os.path.abspath(postroll_resized_path)}'\n")
+                #logger.info("Creating concat file")
+                #with open(concat_file, 'w') as f:
+                #    f.write(f"file '{os.path.abspath(watermarked_resized_path)}'\n")
+                #    f.write(f"file '{os.path.abspath(postroll_resized_path)}'\n")
 
-                with open(concat_file, 'r') as f:
-                    concat_contents = f.read()
-                    logger.info(f"Concat file contents:\n{concat_contents}")
+                #with open(concat_file, 'r') as f:
+                #    concat_contents = f.read()
+                #    logger.info(f"Concat file contents:\n{concat_contents}")
 
-                cmd = [
-                    'ffmpeg',
-                    '-f', 'concat',
-                    '-safe', '0',
-                    '-i', concat_file,
-                    '-c:v', 'libx264', '-preset', 'fast', '-crf', '23',
-                    '-c:a', 'aac', '-b:a', '128k',
-                    '-movflags', '+faststart',
-                    output_path,
-                    '-y'
-                ]
+                #cmd = [
+                #    'ffmpeg',
+                #    '-f', 'concat',
+                #    '-safe', '0',
+                #    '-i', concat_file,
+                #    '-c:v', 'libx264', '-preset', 'fast', '-crf', '23',
+                #    '-c:a', 'aac', '-b:a', '128k',
+                #    '-movflags', '+faststart',
+                #    output_path,
+                #    '-y'
+                #]
 
-                run_ffmpeg_command(cmd)
+                #run_ffmpeg_command(cmd)
 
                 logger.info("Creating thumbnail for the final video")
                 thumbnail_path = f"/media/processed/{item_id}_thumbnail.jpg"
@@ -191,9 +192,9 @@ def main():
                 logger.info("Thumbnail created successfully")
 
                 os.remove(input_watermarked_path)
-                os.remove(watermarked_resized_path)
-                os.remove(postroll_resized_path)
-                os.remove(concat_file)
+                #os.remove(watermarked_resized_path)
+                #os.remove(postroll_resized_path)
+                #os.remove(concat_file)
 
                 original_filename = os.path.basename(input_path)
                 original_destination = f"/media/original/{original_filename}"

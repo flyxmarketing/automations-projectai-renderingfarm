@@ -25,10 +25,10 @@ services:
   br777_renderfarm_render:
     container_name: br777_renderfarm_render
     build: ./render/
-    deploy:
-      resources:
-        limits:
-          cpus: '2'
+    #deploy:
+    #  resources:
+    #    limits:
+    #      cpus: '2'
     volumes:
       - ./media:/media
     networks:

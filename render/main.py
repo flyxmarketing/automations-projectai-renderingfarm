@@ -8,7 +8,10 @@ from rclone_python import rclone
 
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler()
+    ]
 )
 
 logger = logging.getLogger(__name__)
@@ -20,6 +23,102 @@ def run_ffmpeg_command(cmd):
         logger.error(f"FFmpeg error: {result.stderr}")
         raise subprocess.CalledProcessError(result.returncode, cmd, result.stderr)
     return result
+
+def run_ffmpeg_watermark(input_path, watermark_path, watermark_width, margin_bottom, input_watermarked_path):
+    cmd = [
+        'ffmpeg', '-i', input_path, '-stream_loop', '-1', '-i', watermark_path,
+        '-filter_complex',
+        f'[1:v]scale={watermark_width}:-1[watermark];[0:v][watermark]overlay=(W-w)/2:H-h-{margin_bottom}:enable=gte(t\\,3):shortest=1',
+        '-c:v', 'libx264', '-preset', 'fast', '-crf', '23',
+        '-c:a', 'aac', '-b:a', '128k',
+        '-r', '30', '-g', '60',
+        input_watermarked_path, '-y'
+    ]
+    return run_ffmpeg_command(cmd)
+
+def run_ffmpeg_watermark_fixed(input_path, watermark_path, fixed_width, fixed_height, margin_bottom, input_watermarked_path):
+    # This function keeps watermark fixed in size, regardless of video width
+    cmd = [
+        'ffmpeg', '-i', input_path, '-stream_loop', '-1', '-i', watermark_path,
+        '-filter_complex',
+        f'[1:v]scale={fixed_width}:{fixed_height}[watermark];[0:v][watermark]overlay=(W-w)/2:H-h-{margin_bottom}:enable=gte(t\\,3):shortest=1',
+        '-c:v', 'libx264', '-preset', 'fast', '-crf', '23',
+        '-c:a', 'aac', '-b:a', '128k',
+        '-r', '30', '-g', '60',
+        input_watermarked_path, '-y'
+    ]
+    return run_ffmpeg_command(cmd)
+
+def run_ffmpeg_resize(input_path, target_width, target_height, primary_color, output_path):
+    cmd = [
+        'ffmpeg', '-i', input_path,
+        '-vf', f'scale={target_width}:{target_height}:force_original_aspect_ratio=decrease,pad={target_width}:{target_height}:(ow-iw)/2:(oh-ih)/2:color={primary_color}',
+        '-c:v', 'libx264', '-preset', 'fast', '-crf', '23',
+        '-c:a', 'aac', '-b:a', '128k',
+        '-r', '30', '-g', '60',
+        output_path, '-y'
+    ]
+    return run_ffmpeg_command(cmd)
+
+def run_ffmpeg_resize_postroll(input_path, target_width, target_height, primary_color, output_path):
+    cmd = [
+        'ffmpeg', '-i', input_path,
+        '-vf', f'scale={target_width}:{target_height}:force_original_aspect_ratio=decrease,pad={target_width}:{target_height}:(ow-iw)/2:(oh-ih)/2:color={primary_color}',
+        '-c:v', 'libx264', '-preset', 'fast', '-crf', '23',
+        '-c:a', 'aac', '-ar', '44100', '-b:a', '128k',
+        '-r', '30', '-g', '60',
+        output_path, '-y'
+    ]
+    return run_ffmpeg_command(cmd)
+
+def run_ffmpeg_concat(concat_file, output_path):
+    cmd = [
+        'ffmpeg',
+        '-f', 'concat',
+        '-safe', '0',
+        '-i', concat_file,
+        '-c:v', 'libx264', '-preset', 'fast', '-crf', '23',
+        '-c:a', 'aac', '-b:a', '128k',
+        '-movflags', '+faststart',
+        output_path,
+        '-y'
+    ]
+    return run_ffmpeg_command(cmd)
+
+def run_ffmpeg_thumbnail(input_path, thumbnail_path):
+    cmd = [
+        'ffmpeg', '-i', input_path,
+        '-ss', '00:00:01',
+        '-vframes', '1',
+        '-vf', 'scale=1080:1080:force_original_aspect_ratio=decrease,pad=1080:1080:(ow-iw)/2:(oh-ih)/2:color=black',
+        '-q:v', '2',
+        thumbnail_path, '-y'
+    ]
+    return run_ffmpeg_command(cmd)
+
+def run_ffmpeg_hflip(input_path, output_path):
+    logger.info(f"Flipping video horizontally: {input_path} -> {output_path}")
+    cmd = [
+        "ffmpeg", "-i", input_path,
+        "-vf", "hflip",
+        "-c:v", "libx264", "-preset", "fast", "-crf", "23",
+        "-c:a", "aac", "-b:a", "128k",
+        "-r", "30", "-g", "60",
+        output_path, "-y"
+    ]
+    return run_ffmpeg_command(cmd)
+
+def run_ffmpeg_invisible_noise(input_path, output_path, strength=0.008):
+    logger.info(f"Adding invisible noise to video: {input_path} -> {output_path} (strength={strength})")
+    cmd = [
+        "ffmpeg", "-i", input_path,
+        "-vf", f"noise=alls={strength}:allf=t+u",
+        "-c:v", "libx264", "-preset", "fast", "-crf", "23",
+        "-c:a", "copy",
+        "-r", "30", "-g", "60",
+        output_path, "-y"
+    ]
+    return run_ffmpeg_command(cmd)
 
 def upload_render(archive_id, item_id):
     logger.info(f"Uploading render for item {item_id}")
@@ -77,15 +176,17 @@ def main():
                 report_status(item.get("archive_id"), item_id, "processing")
 
                 input_path = item.get("video_filepath")
-                watermark_path = "/code/assets/watermark.mov"
-                postroll_path = "/code/assets/postroll.mp4"
+                watermark_path = "/media/assets/watermark.mov"
+                postroll_path = "/media/assets/postroll.mp4"
                 output_path = f"/media/processed/{item_id}.mp4"
                 primary_color = "#000000"
 
+                hflip_path = f"/media/queue/tmp/{item_id}_hflip.mp4"
                 input_watermarked_path = f"/media/queue/tmp/{item_id}_watermarked.mp4"
                 watermarked_resized_path = f"/media/queue/tmp/{item_id}_watermarked_resized.mp4"
                 postroll_resized_path = f"/media/queue/tmp/{item_id}_postroll_resized.mp4"
                 concat_file = f"/media/queue/tmp/{item_id}_concat.txt"
+                output_with_noise_path = f"/media/processed/{item_id}_noised.mp4"
 
                 logger.info("Getting input video dimensions")
                 probe_cmd = [
@@ -114,87 +215,107 @@ def main():
 
                 logger.info(f"Target dimensions: {target_width}x{target_height}")
 
-                watermark_width = int(target_width * 0.85)
-                margin_bottom = int(target_height * 0.05)  # 5% margin from bottom
+                aspect_ratio = input_width / input_height if input_height != 0 else 0
+                is_instagram_reel = abs(aspect_ratio - 9/16) < 0.05  # Tolerance for rounding errors
 
-                logger.info("Adding watermark to input video")
-                watermark_cmd = [
-                    'ffmpeg', '-i', input_path, '-stream_loop', '-1', '-i', watermark_path,
-                    '-filter_complex',
-                    f'[1:v]scale={watermark_width}:-1[watermark];[0:v][watermark]overlay=(W-w)/2:H-h-{margin_bottom}:enable=gte(t\\,3):shortest=1',
-                    '-c:v', 'libx264', '-preset', 'fast', '-crf', '23',
-                    '-c:a', 'aac', '-b:a', '128k',
-                    '-r', '30', '-g', '60',
-                    input_watermarked_path, '-y'
-                ]
-                run_ffmpeg_command(watermark_cmd)
+                if is_instagram_reel:
+                    watermark_width = int(target_width * 0.75)
+                    margin_bottom = int(target_height * 0.03)
+                else:
+                    banner_aspect_ratio = 1080 / 540
+                    if target_width < 1080:
+                        watermark_width = target_width
+                        watermark_height = int(watermark_width / banner_aspect_ratio)
+                    else:
+                        watermark_width = 1080
+                        watermark_height = 540
+                    margin_bottom = int(target_height * 0.03)
+
+                logger.info("Flipping original input video horizontally")
+                run_ffmpeg_hflip(
+                    input_path,
+                    hflip_path
+                )
+                logger.info("Original video flipped successfully")
+
+                logger.info("Adding watermark to horizontally flipped input video")
+                if is_instagram_reel:
+                    run_ffmpeg_watermark(
+                        hflip_path,
+                        watermark_path,
+                        watermark_width,
+                        margin_bottom,
+                        input_watermarked_path
+                    )
+                else:
+                    run_ffmpeg_watermark_fixed(
+                        hflip_path,
+                        watermark_path,
+                        watermark_width,
+                        watermark_height,
+                        margin_bottom,
+                        input_watermarked_path
+                    )
                 logger.info("Watermark added successfully")
 
+                input_for_resize = input_watermarked_path
+
                 logger.info("Resizing watermarked video with padding")
-                watermarked_resize_cmd = [
-                    'ffmpeg', '-i', input_watermarked_path,
-                    '-vf', f'scale={target_width}:{target_height}:force_original_aspect_ratio=decrease,pad={target_width}:{target_height}:(ow-iw)/2:(oh-ih)/2:color={primary_color}',
-                    '-c:v', 'libx264', '-preset', 'fast', '-crf', '23',
-                    '-c:a', 'aac', '-b:a', '128k',
-                    '-r', '30', '-g', '60',
-                #    watermarked_resized_path, '-y'
-                    output_path, '-y'
-                ]
-                run_ffmpeg_command(watermarked_resize_cmd)
+                run_ffmpeg_resize(
+                    input_for_resize,
+                    target_width,
+                    target_height,
+                    primary_color,
+                    watermarked_resized_path
+                )
                 logger.info("Watermarked video resized successfully")
 
-                #logger.info("Resizing postroll video with padding")
-                #postroll_resize_cmd = [
-                #    'ffmpeg', '-i', postroll_path,
-                #    '-vf', f'scale={target_width}:{target_height}:force_original_aspect_ratio=decrease,pad={target_width}:{target_height}:(ow-iw)/2:(oh-ih)/2:color={primary_color}',
-                #    '-c:v', 'libx264', '-preset', 'fast', '-crf', '23',
-                #    '-c:a', 'aac', '-ar', '44100', '-b:a', '128k',
-                #    '-r', '30', '-g', '60',
-                #    postroll_resized_path, '-y'
-                #]
-                #run_ffmpeg_command(postroll_resize_cmd)
-                #logger.info("Postroll video resized successfully")
+                postroll_enabled = os.path.exists(postroll_path) and os.path.getsize(postroll_path) > 0
 
-                #logger.info("Creating concat file")
-                #with open(concat_file, 'w') as f:
-                #    f.write(f"file '{os.path.abspath(watermarked_resized_path)}'\n")
-                #    f.write(f"file '{os.path.abspath(postroll_resized_path)}'\n")
+                if postroll_enabled:
+                    logger.info("Resizing postroll video with padding")
+                    run_ffmpeg_resize_postroll(
+                        postroll_path,
+                        target_width,
+                        target_height,
+                        primary_color,
+                        postroll_resized_path
+                    )
+                    logger.info("Postroll video resized successfully")
 
-                #with open(concat_file, 'r') as f:
-                #    concat_contents = f.read()
-                #    logger.info(f"Concat file contents:\n{concat_contents}")
+                    logger.info("Creating concat file with watermarked and postroll video")
+                    with open(concat_file, 'w') as f:
+                        f.write(f"file '{os.path.abspath(watermarked_resized_path)}'\n")
+                        f.write(f"file '{os.path.abspath(postroll_resized_path)}'\n")
 
-                #cmd = [
-                #    'ffmpeg',
-                #    '-f', 'concat',
-                #    '-safe', '0',
-                #    '-i', concat_file,
-                #    '-c:v', 'libx264', '-preset', 'fast', '-crf', '23',
-                #    '-c:a', 'aac', '-b:a', '128k',
-                #    '-movflags', '+faststart',
-                #    output_path,
-                #    '-y'
-                #]
+                else:
+                    logger.warning("Postroll video not found. Skipping postroll concatenation, only using watermarked video.")
+                    # Only the watermarked_resized video in concat file
+                    with open(concat_file, 'w') as f:
+                        f.write(f"file '{os.path.abspath(watermarked_resized_path)}'\n")
 
-                #run_ffmpeg_command(cmd)
+                with open(concat_file, 'r') as f:
+                    concat_contents = f.read()
+                    logger.info(f"Concat file contents:\n{concat_contents}")
+
+                run_ffmpeg_concat(concat_file, output_path)
+
+                logger.info("Adding invisible noise to the final concatenated video")
+                run_ffmpeg_invisible_noise(output_path, output_with_noise_path)
+                logger.info("Invisible noise added successfully")
 
                 logger.info("Creating thumbnail for the final video")
                 thumbnail_path = f"/media/processed/{item_id}_thumbnail.jpg"
-                thumbnail_cmd = [
-                    'ffmpeg', '-i', input_path,
-                    '-ss', '00:00:01',
-                    '-vframes', '1',
-                    '-vf', 'scale=1080:1080:force_original_aspect_ratio=decrease,pad=1080:1080:(ow-iw)/2:(oh-ih)/2:color=black',
-                    '-q:v', '2',
-                    thumbnail_path, '-y'
-                ]
-                run_ffmpeg_command(thumbnail_cmd)
+                run_ffmpeg_thumbnail(input_path, thumbnail_path)
                 logger.info("Thumbnail created successfully")
 
                 os.remove(input_watermarked_path)
-                #os.remove(watermarked_resized_path)
-                #os.remove(postroll_resized_path)
-                #os.remove(concat_file)
+                os.remove(hflip_path)
+                os.remove(watermarked_resized_path)
+                if postroll_enabled:
+                    os.remove(postroll_resized_path)
+                os.remove(concat_file)
+                os.remove(output_path)  # Remove the un-noised concatenated output
 
                 original_filename = os.path.basename(input_path)
                 original_destination = f"/media/original/{original_filename}"
@@ -203,8 +324,8 @@ def main():
                 os.rename(input_path, original_destination)
                 logger.info("Input file moved to originals directory")
 
-                if not os.path.exists(output_path) or os.path.getsize(output_path) == 0:
-                    logger.error(f"Output file is empty or missing: {output_path}")
+                if not os.path.exists(output_with_noise_path) or os.path.getsize(output_with_noise_path) == 0:
+                    logger.error(f"Output file is empty or missing: {output_with_noise_path}")
                     item["status"] = "failed"
                     with open('/media/queue.json', 'w') as f:
                         json.dump(queue_data, f, indent=2)
@@ -212,6 +333,8 @@ def main():
                     raise ValueError('Video processing failed')
 
                 logger.info("Video processing completed successfully")
+
+                os.rename(output_with_noise_path, output_path)
 
                 upload_render(item.get("archive_id"), item_id)
 

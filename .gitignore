@@ -5,6 +5,7 @@ media/queue.json
 
 media/queue/*.mp4
 media/queue/tmp/*.mp4
+media/queue/tmp/*.txt
 media/processed/*.mp4
 media/processed/*.jpg
 media/original/*.mp4

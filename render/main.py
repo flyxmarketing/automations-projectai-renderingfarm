@@ -222,13 +222,7 @@ def main():
                     watermark_width = int(target_width * 0.75)
                     margin_bottom = int(target_height * 0.03)
                 else:
-                    banner_aspect_ratio = 1080 / 540
-                    if target_width < 1080:
-                        watermark_width = target_width
-                        watermark_height = int(watermark_width / banner_aspect_ratio)
-                    else:
-                        watermark_width = 1080
-                        watermark_height = 540
+                    watermark_width = int(target_width * 0.75)
                     margin_bottom = int(target_height * 0.03)
 
                 mirror = item.get("mirror", False)

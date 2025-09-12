@@ -231,17 +231,23 @@ def main():
                         watermark_height = 540
                     margin_bottom = int(target_height * 0.03)
 
-                logger.info("Flipping original input video horizontally")
-                run_ffmpeg_hflip(
-                    input_path,
-                    hflip_path
-                )
-                logger.info("Original video flipped successfully")
+                mirror = item.get("mirror", False)
+                if mirror:
+                    logger.info("Mirror flag is True. Flipping original input video horizontally")
+                    run_ffmpeg_hflip(
+                        input_path,
+                        hflip_path
+                    )
+                    logger.info("Original video flipped successfully")
+                    watermark_input_path = hflip_path
+                else:
+                    logger.info("Mirror flag is False. Skipping horizontal flip.")
+                    watermark_input_path = input_path
 
-                logger.info("Adding watermark to horizontally flipped input video")
+                logger.info("Adding watermark to video")
                 if is_instagram_reel:
                     run_ffmpeg_watermark(
-                        hflip_path,
+                        watermark_input_path,
                         watermark_path,
                         watermark_width,
                         margin_bottom,
@@ -249,7 +255,7 @@ def main():
                     )
                 else:
                     run_ffmpeg_watermark_fixed(
-                        hflip_path,
+                        watermark_input_path,
                         watermark_path,
                         watermark_width,
                         watermark_height,
@@ -310,7 +316,8 @@ def main():
                 logger.info("Thumbnail created successfully")
 
                 os.remove(input_watermarked_path)
-                os.remove(hflip_path)
+                if mirror:
+                    os.remove(hflip_path)
                 os.remove(watermarked_resized_path)
                 if postroll_enabled:
                     os.remove(postroll_resized_path)

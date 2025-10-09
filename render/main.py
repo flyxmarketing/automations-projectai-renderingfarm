@@ -186,6 +186,7 @@ def main():
                 watermarked_resized_path = f"/media/queue/tmp/{item_id}_watermarked_resized.mp4"
                 postroll_resized_path = f"/media/queue/tmp/{item_id}_postroll_resized.mp4"
                 concat_file = f"/media/queue/tmp/{item_id}_concat.txt"
+                concat_output_path = f"/media/queue/tmp/{item_id}_concat.mp4"
                 output_with_noise_path = f"/media/processed/{item_id}_noised.mp4"
 
                 logger.info("Getting input video dimensions")
@@ -294,20 +295,20 @@ def main():
                         f.write(f"file '{os.path.abspath(watermarked_resized_path)}'\n")
                         f.write(f"file '{os.path.abspath(postroll_resized_path)}'\n")
 
+                    with open(concat_file, 'r') as f:
+                        concat_contents = f.read()
+                        logger.info(f"Concat file contents:\n{concat_contents}")
+
+                    run_ffmpeg_concat(concat_file, concat_output_path)
+                    video_for_noise = concat_output_path
+
                 else:
                     logger.warning("Postroll video not found. Skipping postroll concatenation, only using watermarked video.")
-                    # Only the watermarked_resized video in concat file
-                    with open(concat_file, 'w') as f:
-                        f.write(f"file '{os.path.abspath(watermarked_resized_path)}'\n")
+                    # Use the watermarked_resized video directly
+                    video_for_noise = watermarked_resized_path
 
-                with open(concat_file, 'r') as f:
-                    concat_contents = f.read()
-                    logger.info(f"Concat file contents:\n{concat_contents}")
-
-                run_ffmpeg_concat(concat_file, output_path)
-
-                logger.info("Adding invisible noise to the final concatenated video")
-                run_ffmpeg_invisible_noise(output_path, output_with_noise_path)
+                logger.info("Adding invisible noise to the final video")
+                run_ffmpeg_invisible_noise(video_for_noise, output_with_noise_path)
                 logger.info("Invisible noise added successfully")
 
                 logger.info("Creating thumbnail for the final video")
@@ -322,8 +323,8 @@ def main():
                 os.remove(watermarked_resized_path)
                 if postroll_enabled:
                     os.remove(postroll_resized_path)
-                os.remove(concat_file)
-                os.remove(output_path)  # Remove the un-noised concatenated output
+                    os.remove(concat_file)
+                    os.remove(concat_output_path)
 
                 original_filename = os.path.basename(input_path)
                 original_destination = f"/media/original/{original_filename}"

@@ -238,27 +238,33 @@ def main():
                     logger.info("Mirror flag is False. Skipping horizontal flip.")
                     watermark_input_path = input_path
 
-                logger.info("Adding watermark to video")
-                if is_instagram_reel:
-                    run_ffmpeg_watermark(
-                        watermark_input_path,
-                        watermark_path,
-                        watermark_width,
-                        margin_bottom,
-                        input_watermarked_path
-                    )
-                else:
-                    run_ffmpeg_watermark_fixed(
-                        watermark_input_path,
-                        watermark_path,
-                        watermark_width,
-                        watermark_height,
-                        margin_bottom,
-                        input_watermarked_path
-                    )
-                logger.info("Watermark added successfully")
+                watermark_enabled = os.path.exists(watermark_path) and os.path.getsize(watermark_path) > 0
 
-                input_for_resize = input_watermarked_path
+                if watermark_enabled:
+                    logger.info("Adding watermark to video")
+                    if is_instagram_reel:
+                        run_ffmpeg_watermark(
+                            watermark_input_path,
+                            watermark_path,
+                            watermark_width,
+                            margin_bottom,
+                            input_watermarked_path
+                        )
+                    else:
+                        watermark_height = int(target_height * 0.75)
+                        run_ffmpeg_watermark_fixed(
+                            watermark_input_path,
+                            watermark_path,
+                            watermark_width,
+                            watermark_height,
+                            margin_bottom,
+                            input_watermarked_path
+                        )
+                    logger.info("Watermark added successfully")
+                    input_for_resize = input_watermarked_path
+                else:
+                    logger.warning("Watermark video not found. Skipping watermark insertion.")
+                    input_for_resize = watermark_input_path
 
                 logger.info("Resizing watermarked video with padding")
                 run_ffmpeg_resize(
@@ -309,7 +315,8 @@ def main():
                 run_ffmpeg_thumbnail(input_path, thumbnail_path)
                 logger.info("Thumbnail created successfully")
 
-                os.remove(input_watermarked_path)
+                if watermark_enabled:
+                    os.remove(input_watermarked_path)
                 if mirror:
                     os.remove(hflip_path)
                 os.remove(watermarked_resized_path)

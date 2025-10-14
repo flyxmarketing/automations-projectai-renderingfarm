@@ -9,10 +9,13 @@ ENV PYTHONUNBUFFERED 1
 
 WORKDIR /code
 
-COPY requirements.txt /code/
+COPY api/requirements.txt /code/
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
-COPY . /code
+COPY api /code
+
+RUN mkdir -p /code/libs/
+COPY libs /code/libs
 
 CMD ["hypercorn", "asgi:app", "--bind", "0.0.0.0:8000", "--workers", "4"]

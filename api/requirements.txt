@@ -1,5 +1,7 @@
-requests
 quart
 asyncio
 hypercorn
+psycopg2-binary
+requests
 yt_dlp
+boto3

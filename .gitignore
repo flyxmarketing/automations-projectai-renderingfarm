@@ -1,14 +1,13 @@
 # Created by venv; see https://docs.python.org/3/library/venv.html
 
-media/cookies.txt
-media/queue.json
-
 media/queue/*.mp4
 media/queue/tmp/*.mp4
 media/queue/tmp/*.txt
 media/processed/*.mp4
 media/processed/*.jpg
 media/original/*.mp4
+
+api/libs/ytdlp/cookies.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

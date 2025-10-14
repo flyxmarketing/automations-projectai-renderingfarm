@@ -1,2 +1,3 @@
 requests
-rclone-python
+psycopg2-binary
+boto3

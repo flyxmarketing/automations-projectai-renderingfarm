@@ -19,7 +19,7 @@ services:
       - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
       - "traefik.http.services.renderapi.loadbalancer.server.port=8000"
     networks:
-      - npm_frontend
+      - frontend
 
   br777_renderfarm_render:
     restart: always
@@ -33,8 +33,8 @@ services:
         limits:
           cpus: '2'
     networks:
-      - npm_frontend
+      - frontend
 
 networks:
-  npm_frontend:
+  frontend:
     external: true

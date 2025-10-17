@@ -5,6 +5,7 @@ import random
 from libs.postgres.init import db_cursor, db_execute, db_close
 from libs.ffmpeg.commands_manual import run_ffprobe
 from libs.ffmpeg.init import render_run
+from libs.downloader.init import downloadVideo
 from libs.s3.init import uploadFile
 
 def main():
@@ -42,8 +43,14 @@ def main():
         if queue_info['render_steps'] == [""]:
             print(f'#### {queue_id} has no valid render steps, uploading original file')
             name, ext = input.rsplit('.', 1)
+            try:
+                downloadVideo(input, f'/tmp/{queue_id}.{ext}')
+            except Exception:
+                print("===== Request failed to download video")
+                return jsonify({'status': 'error', 'message': 'Failed to download video'}), 500
             output_final = 'rbucket/' + id_archive + '/final' + '.' + ext
-            if uploadFile(output_final, input):
+            localFiles.append(f"/tmp/{queue_id}.{ext}")
+            if uploadFile(output_final, f'/tmp/{queue_id}.{ext}'):
                 db_execute(db,f"UPDATE public.render_queue SET render_status='finished',render_status_text='Processing Finished (no transformations)',render_final_url='{bucket_endpoint}{output_final}' WHERE id = {str(queue_id)};")
                 print(f'###### Format for {queue_id} FINISHED (no transformations)')
             else:
@@ -69,12 +76,13 @@ def main():
                         if uploadFile(output_final,output_local):
                             db_execute(db,f"UPDATE public.render_queue SET render_status='finished',render_status_text='Processing Finished',render_final_url='{bucket_endpoint}{output_final}' WHERE id = {str(queue_id)};")
                             print(f'###### Format for {queue_id} FINISHED')
-                            for localFile in localFiles:
-                                os.remove(localFile)
+
                 else:
                     db_execute(db,f"UPDATE public.render_queue SET render_status='error',render_status_text='Failed to execute step {step}, check logs for more information.' WHERE id = {str(queue_id)};")
                     print(renderProcess)
                     break
+        for localFile in localFiles:
+            os.remove(localFile)
     db_close(db)
 
 if __name__ == "__main__":

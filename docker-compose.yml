@@ -2,27 +2,36 @@
 services:
   br777_renderfarm_api:
     container_name: br777_renderfarm_api
+    restart: always
     build:
       context: ./
       dockerfile: ./api/Dockerfile
     expose:
       - "8000"
-    ports:
-      - "127.0.0.1:8000:8000"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.renderapi.rule=Host(`render.botfarm.live`)"
+      - "traefik.http.routers.renderapi.entrypoints=websecure"
+      - "traefik.http.routers.renderapi.tls.certresolver=myresolver"
+      - "traefik.http.routers.renderapi-http.rule=Host(`render.botfarm.live`)"
+      - "traefik.http.routers.renderapi-http.entrypoints=web"
+      - "traefik.http.routers.renderapi-http.middlewares=redirect-to-https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+      - "traefik.http.services.renderapi.loadbalancer.server.port=8000"
     networks:
       - npm_frontend
 
   br777_renderfarm_render:
-    container_name: br777_renderfarm_render
+    restart: always
     build:
       context: ./
       dockerfile: ./render/Dockerfile
     deploy:
+      replicas: 8
+      mode: replicated
       resources:
         limits:
-          cpus: '1'
-    volumes:
-      - ./media:/media
+          cpus: '2'
     networks:
       - npm_frontend
 

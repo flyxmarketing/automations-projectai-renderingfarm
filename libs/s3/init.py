@@ -11,7 +11,7 @@ def uploadFile(remoteFile, localFile):
         aws_secret_access_key="b2e6b106d48c325e8d0ef6eeb1e92bfb409e257c9c0d840d62f3576ef3621324"
     )
     try:
-        client.put_object(Bucket=bucket, Key=remoteFile, Body=open(localFile, 'rb'))
+        client.put_object(Bucket=bucket, Key=remoteFile, Body=open(localFile, 'rb'), ACL='public-read')
         return True
     except FileNotFoundError:
         raise Exception(f"The file {localFile} was not found.")

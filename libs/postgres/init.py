@@ -6,7 +6,7 @@ def db_connect():
         database="vwM8xdFDLiPD",
         user="vwM8xdFDLiPD",
         password="cGpgHqjnnQk3a3iuc9",
-        host="95.216.9.152",
+        host="postgresql",
         port="47523",
         sslmode="require"
     )

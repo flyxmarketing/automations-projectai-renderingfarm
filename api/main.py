@@ -10,6 +10,7 @@ from libs.s3.init import uploadFile
 from libs.postgres.init import db_cursor, db_execute, db_close
 
 def create_app():
+    bucket_endpoint = "https://rf-storage.flyxmarketing.com/"
     app = Quart(__name__)
     app.secret_key = 'Zr8pIKMOV+yrNiJ2MesAO4ch'
     @app.route('/queueRender', methods=['POST'])
@@ -36,9 +37,9 @@ def create_app():
             except Exception:
                 print("===== Request failed to download video")
                 return jsonify({'status': 'error', 'message': 'Failed to download video'}), 500
-            if uploadFile(f"{id_archive}/original.mp4",video_filepath):
+            if uploadFile(f"rbucket/{id_archive}/original.mp4",video_filepath):
                 os.remove(video_filepath)
-                url_archive = f"https://rf-storage.flyxmarketing.com/{id_archive}/original.mp4"
+                url_archive = f"{bucket_endpoint}{id_archive}/original.mp4"
                 render_steps_json = json.dumps(render_steps)
                 current_timestamp = datetime.now()
                 db_link = db_cursor()

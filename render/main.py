@@ -6,9 +6,9 @@ from libs.postgres.init import db_cursor, db_execute, db_close
 from libs.ffmpeg.commands_manual import run_ffprobe
 from libs.ffmpeg.init import render_run
 from libs.s3.init import uploadFile
-from libs.webhooks.init import renderReportStatus, renderReportFinished
 
 def main():
+    bucket_endpoint = "https://rf-storage.flyxmarketing.com/"
     db = db_cursor()
     queue_query = db_execute(db,"SELECT * FROM public.render_queue WHERE render_status='queued' ORDER BY id ASC LIMIT 1;")
     queue_info = queue_query.fetchone()
@@ -55,9 +55,9 @@ def main():
                 print(f'#### {queue_id} step {count - 1} [{step}] ended')
                 if count == steps_count:
                     final_name, final_ext = output_local.rsplit('.', 1)
-                    output_final = id_archive + '/final' + '.' + final_ext
+                    output_final = 'rbucket/' + id_archive + '/final' + '.' + final_ext
                     if uploadFile(output_final,output_local):
-                        db_execute(db,f"UPDATE public.render_queue SET render_status='finished',render_status_text='Processing Finished',render_final_url='https://rf-storage.flyxmarketing.com/{output_final}' WHERE id = {str(queue_id)};")
+                        db_execute(db,f"UPDATE public.render_queue SET render_status='finished',render_status_text='Processing Finished',render_final_url='{bucket_endpoint}{output_final}' WHERE id = {str(queue_id)};")
                         print(f'###### Format for {queue_id} FINISHED')
                         for localFile in localFiles:
                             os.remove(localFile)

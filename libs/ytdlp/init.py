@@ -5,7 +5,9 @@ def downloadVideoWithYTDLP(url, filepath):
     try:
         ydl_opts = {
             'outtmpl': filepath,
-            'format': 'best[ext=mp4]/best'
+            'format': 'best[ext=mp4]/best',
+            'quiet': True,
+            'no_warnings': True
         }
         cookies_file = '/code/libs/ytdlp/cookies.txt'
         if os.path.exists(cookies_file):

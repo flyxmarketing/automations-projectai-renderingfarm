@@ -39,7 +39,7 @@ def main():
         localFiles = []
         steps_count = len(queue_info['render_steps'])
         print(f'#### {queue_id} requires {steps_count} transformations.')
-        if not queue_info['render_steps'] or (len(queue_info['render_steps']) == 1 and queue_info['render_steps'][0] is None):
+        if queue_info['render_steps'] == [""]:
             print(f'#### {queue_id} has no valid render steps, uploading original file')
             name, ext = input.rsplit('.', 1)
             output_final = 'rbucket/' + id_archive + '/final' + '.' + ext

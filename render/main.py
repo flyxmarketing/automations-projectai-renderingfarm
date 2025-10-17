@@ -39,32 +39,42 @@ def main():
         localFiles = []
         steps_count = len(queue_info['render_steps'])
         print(f'#### {queue_id} requires {steps_count} transformations.')
-        for step in queue_info['render_steps']:
-            print(f'#### {queue_id} step {count} [{step}] starting')
-            db_execute(db,f"UPDATE public.render_queue SET render_status_text='{count} of {steps_count} [{step}]' WHERE id = {str(queue_id)};")
-            if count == 0:
-                name, ext = input.rsplit('.', 1)
+        if not queue_info['render_steps'] or (len(queue_info['render_steps']) == 1 and queue_info['render_steps'][0] is None):
+            print(f'#### {queue_id} has no valid render steps, uploading original file')
+            name, ext = input.rsplit('.', 1)
+            output_final = 'rbucket/' + id_archive + '/final' + '.' + ext
+            if uploadFile(output_final, input):
+                db_execute(db,f"UPDATE public.render_queue SET render_status='finished',render_status_text='Processing Finished (no transformations)',render_final_url='{bucket_endpoint}{output_final}' WHERE id = {str(queue_id)};")
+                print(f'###### Format for {queue_id} FINISHED (no transformations)')
             else:
-                name, ext = localFiles[-1].rsplit('.', 1)
-            output_local = '/tmp/' + str(queue_id) + '_' + str(count) + '.' + ext
-            renderProcess = render_run(input,output_local, step, {'input_width': input_width, 'input_height': input_height, 'input_bitrate': input_bitrate, 'input_duration': input_duration})
-            if renderProcess:
-                input = renderProcess
-                count = count + 1
-                localFiles.append(input)
-                print(f'#### {queue_id} step {count - 1} [{step}] ended')
-                if count == steps_count:
-                    final_name, final_ext = output_local.rsplit('.', 1)
-                    output_final = 'rbucket/' + id_archive + '/final' + '.' + final_ext
-                    if uploadFile(output_final,output_local):
-                        db_execute(db,f"UPDATE public.render_queue SET render_status='finished',render_status_text='Processing Finished',render_final_url='{bucket_endpoint}{output_final}' WHERE id = {str(queue_id)};")
-                        print(f'###### Format for {queue_id} FINISHED')
-                        for localFile in localFiles:
-                            os.remove(localFile)
-            else:
-                db_execute(db,f"UPDATE public.render_queue SET render_status='error',render_status_text='Failed to execute step {step}, check logs for more information.' WHERE id = {str(queue_id)};")
-                print(renderProcess)
-                break
+                db_execute(db,f"UPDATE public.render_queue SET render_status='error',render_status_text='Failed to upload original file as final.' WHERE id = {str(queue_id)};")
+        else:
+            for step in queue_info['render_steps']:
+                print(f'#### {queue_id} step {count} [{step}] starting')
+                db_execute(db,f"UPDATE public.render_queue SET render_status_text='{count} of {steps_count} [{step}]' WHERE id = {str(queue_id)};")
+                if count == 0:
+                    name, ext = input.rsplit('.', 1)
+                else:
+                    name, ext = localFiles[-1].rsplit('.', 1)
+                output_local = '/tmp/' + str(queue_id) + '_' + str(count) + '.' + ext
+                renderProcess = render_run(input,output_local, step, {'input_width': input_width, 'input_height': input_height, 'input_bitrate': input_bitrate, 'input_duration': input_duration})
+                if renderProcess:
+                    input = renderProcess
+                    count = count + 1
+                    localFiles.append(input)
+                    print(f'#### {queue_id} step {count - 1} [{step}] ended')
+                    if count == steps_count:
+                        final_name, final_ext = output_local.rsplit('.', 1)
+                        output_final = 'rbucket/' + id_archive + '/final' + '.' + final_ext
+                        if uploadFile(output_final,output_local):
+                            db_execute(db,f"UPDATE public.render_queue SET render_status='finished',render_status_text='Processing Finished',render_final_url='{bucket_endpoint}{output_final}' WHERE id = {str(queue_id)};")
+                            print(f'###### Format for {queue_id} FINISHED')
+                            for localFile in localFiles:
+                                os.remove(localFile)
+                else:
+                    db_execute(db,f"UPDATE public.render_queue SET render_status='error',render_status_text='Failed to execute step {step}, check logs for more information.' WHERE id = {str(queue_id)};")
+                    print(renderProcess)
+                    break
     db_close(db)
 
 if __name__ == "__main__":

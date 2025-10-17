@@ -5,7 +5,7 @@ from libs.postgres.init import db_cursor, db_execute, db_close
 from libs.ffmpeg.commands_manual import run_ffprobe
 from libs.ffmpeg.init import render_run
 from libs.s3.init import uploadFile
-from libs.webhooks.init
+from libs.webhooks.init import renderReportStatus, renderReportFinished
 
 def main():
     db = db_cursor()

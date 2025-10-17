@@ -101,4 +101,12 @@ def create_app():
         except Exception as e:
             return jsonify({'status': 'error', 'message': f'Internal server error. {e}'}), 500
 
+    @app.errorhandler(404)
+    async def not_found(e):
+        return '', 302, {'Location': 'https://botfarm.live'}
+
+    @app.route('/')
+    async def index():
+        return '', 302, {'Location': 'https://botfarm.live'}
+
     return app

@@ -1,5 +1,6 @@
 import os
 import time
+import random
 
 from libs.postgres.init import db_cursor, db_execute, db_close
 from libs.ffmpeg.commands_manual import run_ffprobe
@@ -69,4 +70,6 @@ def main():
 if __name__ == "__main__":
     while True:
         main()
-        time.sleep(60)
+        sleep_for = 30 + random.randint(0, 60)
+        print(f"##### Sleeping for {sleep_for} seconds")
+        time.sleep(sleep_for)

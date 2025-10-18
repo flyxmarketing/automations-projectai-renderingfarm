@@ -39,7 +39,7 @@ def create_app():
                 return jsonify({'status': 'error', 'message': 'Failed to download video'}), 500
             if uploadFile(f"rbucket/{id_archive}/original.mp4",video_filepath):
                 os.remove(video_filepath)
-                url_archive = f"{bucket_endpoint}/rbucket/{id_archive}/original.mp4"
+                url_archive = f"{bucket_endpoint}rbucket/{id_archive}/original.mp4"
                 render_steps_json = json.dumps(render_steps)
                 current_timestamp = datetime.now()
                 db_link = db_cursor()

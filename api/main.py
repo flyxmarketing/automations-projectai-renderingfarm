@@ -57,6 +57,7 @@ def create_app():
             uploadFile(f"rbucket/{id_archive}/thumbnail.jpg",video_thumbnail_file)
             if uploadFile(f"rbucket/{id_archive}/original.mp4",video_filepath):
                 os.remove(video_filepath)
+                os.remove(video_thumbnail_file)
                 url_archive = f"{bucket_endpoint}rbucket/{id_archive}/original.mp4"
                 url_thumbnail = f"{bucket_endpoint}rbucket/{id_archive}/thumbnail.jpg"
                 render_steps_json = json.dumps(render_steps)

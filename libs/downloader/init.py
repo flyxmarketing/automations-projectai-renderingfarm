@@ -32,7 +32,9 @@ def downloadVideo(url, filepath):
                         if chunk:
                             f.write(chunk)
             elif is_twitter:
-                video_url = getXVideo(url)
+                url_path = url.split('?')[0]
+                post_id = url_path.rstrip('/').split('/')[-1]
+                video_url = getXVideo(post_id)
                 video_response = requests.get(video_url, stream=True)
                 video_response.raise_for_status()
                 with open(filepath, 'wb') as f:

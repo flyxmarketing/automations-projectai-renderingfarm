@@ -58,10 +58,11 @@ def create_app():
             if uploadFile(f"rbucket/{id_archive}/original.mp4",video_filepath):
                 os.remove(video_filepath)
                 url_archive = f"{bucket_endpoint}rbucket/{id_archive}/original.mp4"
+                url_thumbnail = f"{bucket_endpoint}rbucket/{id_archive}/thumbnail.jpg"
                 render_steps_json = json.dumps(render_steps)
                 current_timestamp = datetime.now()
                 db_link = db_cursor()
-                insert_result = db_execute(db_link, "INSERT INTO public.render_queue (id_archive,id_run,id_bot,url_post,url_archive,render_steps,render_status,render_status_text,date_added) VALUES (%s,%s,%s,%s,%s,%s,'queued','Waiting for Node to be available',%s) RETURNING *;", (id_archive, id_run, id_bot, url_post, url_archive, render_steps_json, current_timestamp))
+                insert_result = db_execute(db_link, "INSERT INTO public.render_queue (id_archive,id_run,id_bot,url_post,url_archive,render_steps,render_status,render_status_text,date_added,url_thumbnail) VALUES (%s,%s,%s,%s,%s,%s,'queued','Waiting for Node to be available',%s,%s) RETURNING *;", (id_archive, id_run, id_bot, url_post, url_archive, render_steps_json, current_timestamp,url_thumbnail))
                 queue_info = insert_result.fetchone()
                 db_close(db_link)
                 if insert_result:

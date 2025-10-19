@@ -97,6 +97,9 @@ def create_app():
                     return jsonify({
                         'status': status_info['render_status'],
                         'message': status_info['render_status_text'],
+                        'original_url': status_info['url_post'],
+                        'archived_thumbnail': status_info['url_thumbnail'],
+                        'archived_original': status_info['url_archive'],
                         'final_url': status_info['render_final_url'],
                         'logs': status_info['logs']
                     }), 200

@@ -18,6 +18,16 @@ def run_ffmpeg(cmd):
     except Exception as e:
         return e
 
+def do_generatethumbnail(input, output, params, time_percent=1):
+    duration = float(params.get('input_duration',1))
+    time_seconds = (duration * time_percent) / 100.0
+    cmd = [
+        "ffmpeg", "-ss", str(time_seconds), "-i", input,
+        "-frames:v", "1",
+        output, "-y"
+    ]
+    return run_ffmpeg(cmd)
+
 def do_hflip(input, output):
     cmd = [
         "ffmpeg", "-i", input,

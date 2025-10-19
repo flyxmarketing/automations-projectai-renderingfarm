@@ -5,6 +5,7 @@ import json
 from quart import Quart, jsonify, request
 from datetime import datetime
 
+from libs.ffmpeg.commands_manual import do_generatethumbnail, run_ffprobe
 from libs.downloader.init import downloadVideo
 from libs.s3.init import uploadFile
 from libs.postgres.init import db_cursor, db_execute, db_close
@@ -26,6 +27,7 @@ def create_app():
             id_run = data.get('id_run')
             id_bot = data.get('id_bot')
             url_post = data.get('url_post')
+            thumbnail_percentage = data.get('thumbnail_percentage', 1)
             render_steps = data.get('render_steps')
             if not id_archive or not id_run or not id_bot or not url_post or not render_steps:
                 print("===== Request failed with missing parameters")
@@ -37,6 +39,22 @@ def create_app():
             except Exception:
                 print("===== Request failed to download video")
                 return jsonify({'status': 'error', 'message': 'Failed to download video'}), 500
+            video_thumbnail_file = f"/tmp/{request_uuid}.jpg"
+            original_data = run_ffprobe(video_filepath)
+            input_width = None
+            input_height = None
+            input_bitrate = None
+            input_duration = None
+            for stream in original_data['streams']:
+                if stream['codec_type'] == 'video':
+                    input_width = int(stream['width'])
+                    input_height = int(stream['height'])
+                    input_bitrate = int(stream['bit_rate'])
+                    input_duration = float(stream['duration'])
+                    break
+            input_params = {'input_width': input_width, 'input_height': input_height, 'input_bitrate': input_bitrate, 'input_duration': input_duration}
+            do_generatethumbnail(video_filepath,video_thumbnail_file,input_params,thumbnail_percentage)
+            uploadFile(f"rbucket/{id_archive}/thumbnail.jpg",video_thumbnail_file)
             if uploadFile(f"rbucket/{id_archive}/original.mp4",video_filepath):
                 os.remove(video_filepath)
                 url_archive = f"{bucket_endpoint}rbucket/{id_archive}/original.mp4"

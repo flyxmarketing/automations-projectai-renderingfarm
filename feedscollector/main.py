@@ -14,11 +14,9 @@ def create_app():
         username = request.args.get('username', '')
         if not source or not username:
             return jsonify({'error': 'Parameters missing'}), 400
-
         allowed_sources = ['instagram', 'twitter', 'tiktok']
         if source not in allowed_sources:
             return jsonify({'error': 'Invalid source. Must be instagram, twitter, or tiktok'}), 400
-
         if source == 'instagram':
             reels = getInstagramReelsFromUser(username)
             return jsonify(reels), 200
@@ -31,12 +29,12 @@ def create_app():
         else:
             return jsonify({'error': 'Source Not Found'}), 404
 
-    #@app.errorhandler(404)
-    #async def not_found(e):
-    #    return '', 302, {'Location': 'https://botfarm.live'}
+    @app.errorhandler(404)
+    async def not_found(e):
+        return '', 302, {'Location': 'https://botfarm.live'}
 
-    #@app.route('/')
-    #async def index():
-    #    return '', 302, {'Location': 'https://botfarm.live'}
+    @app.route('/')
+    async def index():
+        return '', 302, {'Location': 'https://botfarm.live'}
 
     return app

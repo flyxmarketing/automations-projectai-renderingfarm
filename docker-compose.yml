@@ -35,6 +35,29 @@ services:
     networks:
       - frontend
 
+  br777_renderfarm_feedscollector:
+    container_name: br777_renderfarm_feedscollector
+    restart: always
+    build:
+      context: ./
+      dockerfile: ./feedscollector/Dockerfile
+    expose:
+      - "8000"
+    ports:
+      - "8000:8000"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.renderfeedscollector.rule=Host(`feeds-collector.botfarm.live`)"
+      - "traefik.http.routers.renderfeedscollector.entrypoints=websecure"
+      - "traefik.http.routers.renderfeedscollector.tls.certresolver=myresolver"
+      - "traefik.http.routers.renderfeedscollector-http.rule=Host(`feeds-collector.botfarm.live`)"
+      - "traefik.http.routers.renderfeedscollector-http.entrypoints=web"
+      - "traefik.http.routers.renderfeedscollector-http.middlewares=redirect-to-https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+      - "traefik.http.services.renderfeedscollector.loadbalancer.server.port=8000"
+    networks:
+      - frontend
+
 networks:
   frontend:
     external: true

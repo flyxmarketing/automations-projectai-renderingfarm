@@ -1,0 +1,5 @@
+quart
+asyncio
+hypercorn
+psycopg2-binary
+requests

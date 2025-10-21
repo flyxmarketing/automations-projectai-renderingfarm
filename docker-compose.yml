@@ -43,8 +43,6 @@ services:
       dockerfile: ./feedscollector/Dockerfile
     expose:
       - "8000"
-    ports:
-      - "8000:8000"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.renderfeedscollector.rule=Host(`feeds-collector.botfarm.live`)"

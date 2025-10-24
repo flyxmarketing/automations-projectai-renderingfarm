@@ -64,13 +64,13 @@ def getInstagramReelsFromUser(user: str):
     all_reels = []
     pagination_token = ""
     request_count = 0
-    max_reels = 100
+    max_reels = 10
     while len(all_reels) < max_reels:
         if request_count > 0 and request_count % 10 == 0:
             time.sleep(60)
         data = {
             "username_or_url": user,
-            "amount": "30",
+            "amount": "10",
             "pagination_token": pagination_token
         }
         response = requests.post(
@@ -130,13 +130,13 @@ def getTikTokVideosFromUser(user: str):
     all_posts = []
     cursor = "0"
     request_count = 0
-    max_posts = 100
+    max_posts = 10
     while len(all_posts) < max_posts:
         if request_count > 0 and request_count % 10 == 0:
             time.sleep(60)
         data = {
             "secUid": sec_uid,
-            "count": "35",
+            "count": "10",
             "cursor": cursor
         }
         response = requests.get(

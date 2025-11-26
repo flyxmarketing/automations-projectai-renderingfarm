@@ -107,15 +107,15 @@ def render_run(input, output, step, params):
                 case 6:
                     watermark_path = 'https://rf-storage.flyxmarketing.com/watermarks/watermark_20251126_v6.mov'
                     watermark_width = int(params.get('input_width') * 0.75)
-                    margin_bottom = int(20)
+                    margin_bottom = int(5)
                 case 7:
                     watermark_path = 'https://rf-storage.flyxmarketing.com/watermarks/watermark_20251126_v7.mov'
                     watermark_width = int(params.get('input_width') * 0.75)
-                    margin_bottom = int(20)
+                    margin_bottom = int(5)
                 case 8:
                     watermark_path = 'https://rf-storage.flyxmarketing.com/watermarks/watermark_20251126_v8.mov'
                     watermark_width = int(params.get('input_width') * 0.75)
-                    margin_bottom = int(20)
+                    margin_bottom = int(5)
                 case _:
                     return False
             render = do_watermark(input,watermark_path,watermark_width,margin_bottom,output)

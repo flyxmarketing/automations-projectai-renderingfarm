@@ -129,7 +129,7 @@ def do_watermark(input, watermark_path, watermark_width, margin_bottom, output):
     cmd = [
         'ffmpeg', '-i', input, '-stream_loop', '-1', '-i', watermark_path,
         '-filter_complex',
-        f'[1:v]scale={watermark_width}:-1[watermark];[0:v][watermark]overlay=(W-w)/2:H-h-{margin_bottom}:enable=gte(t\\,3):shortest=1',
+        f'[1:v]scale={watermark_width}:-1[watermark];[0:v][watermark]overlay=(W-w)/2:H-h{margin_bottom}:enable=gte(t\\,3):shortest=1',
         "-c:v", "libx264", "-preset", "fast", "-crf", "23",
         "-c:a", "aac", "-b:a", "128k",
         "-r", "30", "-g", "60",
